@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Flashcard Belajar SMP</title>
+  <title>Flashcard Bahasa + TTS</title>
   <link rel="manifest" href="manifest.webmanifest">
   <style>
     body {
@@ -42,12 +42,12 @@
       justify-content: center;
     }
     button {
-      padding: 8px 15px;
-      border: none; border-radius: 8px;
+      padding: 6px 12px;
+      border: none; border-radius: 6px;
       cursor: pointer;
       background: #007bff; color: white;
     }
-    select, input {
+    select {
       padding: 5px; border-radius: 6px;
     }
   </style>
@@ -86,18 +86,18 @@
 </style>
 
 <body>
-  <h2>📚 Flashcard Belajar SMP</h2>
+  <h2>🌍 Flashcard Bahasa + TTS</h2>
   <div class="menu">
     <select id="deckSelect"></select>
     <button onclick="toggleTheme()">🌙/☀️</button>
-    <button onclick="addDeck()">➕ Mapel</button>
-    <button onclick="deleteDeck()">🗑️ Mapel</button>
+    <button onclick="addDeck()">➕ Bahasa</button>
+    <button onclick="deleteDeck()">🗑️ Bahasa</button>
     <button onclick="importJSON()">📂 Import</button>
     <button onclick="exportJSON()">💾 Export</button>
   </div>
 
   <div class="card" onclick="toggleAnswer()">
-    <span id="flashText">Pilih mapel dulu</span>
+    <span id="flashText">Pilih bahasa dulu</span>
   </div>
 
   <div class="controls">
@@ -105,25 +105,45 @@
     <button onclick="nextCard()">Next ➡️</button>
     <button onclick="addCard()">➕ Tambah</button>
     <button onclick="deleteCard()">🗑️ Hapus</button>
+    <button onclick="speak()">🔊 Speak</button>
+    <button onclick="stopSpeak()">⏹ Stop</button>
+  </div>
+
+  <div class="controls">
+    <span>Rate:</span>
+    <button onclick="adjustRate(-0.1)">◀</button>
+    <span id="rateVal">1.0</span>
+    <button onclick="adjustRate(0.1)">▶</button>
+
+    <span>Pitch:</span>
+    <button onclick="adjustPitch(-0.1)">◀</button>
+    <span id="pitchVal">1.0</span>
+    <button onclick="adjustPitch(0.1)">▶</button>
   </div>
 
   <script>
     let data = {
-      "IPA": [
-        {q: "Apa persamaan umum fotosintesis?", a: "6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂"},
-        {q: "Apa bunyi Hukum Newton II?", a: "ΣF = m × a"},
-      ],
-      "Matematika": [
-        {q: "Rumus keliling lingkaran?", a: "K = 2 × π × r"},
-        {q: "Teorema Pythagoras?", a: "a² + b² = c²"}
+      "English": [
+        {q: "Apple", a: "Apel"},
+        {q: "School", a: "Sekolah"},
+        {q: "I am happy", a: "Saya bahagia"},
+        {q: "How are you today?", a: "Apa kabar hari ini?"},
+        {q: "Could you please help me find the nearest bus station?", 
+         a: "Bisakah kamu tolong saya menemukan halte bus terdekat?"},
+        {q: "The weather is really nice today, I think we should go for a walk in the park.", 
+         a: "Cuacanya benar-benar bagus hari ini, saya pikir kita sebaiknya jalan-jalan ke taman."},
+        {q: "Learning English every day, even for just 15 minutes, can improve your skills significantly.", 
+         a: "Belajar Bahasa Inggris setiap hari, bahkan hanya 15 menit, dapat meningkatkan kemampuanmu secara signifikan."}
       ]
     };
 
     let deck = [], deckName = null, index = 0, showAnswer = false;
+    let speechRate = 1.0;
+    let speechPitch = 1.0;
 
     function init() {
       const sel = document.getElementById("deckSelect");
-      sel.innerHTML = "<option disabled selected>Pilih Mapel</option>";
+      sel.innerHTML = "<option disabled selected>Pilih Bahasa</option>";
       Object.keys(data).forEach(name => {
         const opt = document.createElement("option");
         opt.value = name; opt.textContent = name;
@@ -141,11 +161,11 @@
 
     function render() {
       if (!deckName || deck.length === 0) {
-        document.getElementById("flashText").textContent = "Belum ada kartu di mapel ini";
+        document.getElementById("flashText").textContent = "Belum ada kartu di bahasa ini";
         return;
       }
       const card = deck[index];
-      document.getElementById("flashText").textContent = 
+      document.getElementById("flashText").textContent =
         showAnswer ? card.a : card.q;
     }
 
@@ -160,6 +180,7 @@
       index = (index+1) % deck.length;
       showAnswer = false;
       render();
+      stopSpeak();
     }
 
     function prevCard() {
@@ -167,12 +188,13 @@
       index = (index-1+deck.length) % deck.length;
       showAnswer = false;
       render();
+      stopSpeak();
     }
 
     function addCard() {
-      if (!deckName) return alert("Pilih mapel dulu!");
-      const q = prompt("Masukkan pertanyaan:");
-      const a = prompt("Masukkan jawaban:");
+      if (!deckName) return alert("Pilih bahasa dulu!");
+      const q = prompt("Masukkan kata/kalimat (Bahasa Asing):");
+      const a = prompt("Masukkan terjemahan (Bahasa Indonesia):");
       if(q && a) deck.push({q,a});
       render();
     }
@@ -187,24 +209,24 @@
     }
 
     function addDeck() {
-      const name = prompt("Masukkan nama mapel baru:");
+      const name = prompt("Masukkan nama bahasa baru (misalnya: Japanese):");
       if (name && !data[name]) {
         data[name] = [];
         init();
-        alert("Mapel '" + name + "' berhasil ditambahkan!");
+        alert("Bahasa '" + name + "' berhasil ditambahkan!");
       } else if (data[name]) {
-        alert("Mapel sudah ada!");
+        alert("Bahasa sudah ada!");
       }
     }
 
     function deleteDeck() {
-      if (!deckName) return alert("Pilih mapel dulu!");
-      if (confirm("Hapus mapel '" + deckName + "' beserta semua kartunya?")) {
+      if (!deckName) return alert("Pilih bahasa dulu!");
+      if (confirm("Hapus bahasa '" + deckName + "' beserta semua kartunya?")) {
         delete data[deckName];
         deckName = null;
         deck = [];
         init();
-        document.getElementById("flashText").textContent = "Pilih mapel dulu";
+        document.getElementById("flashText").textContent = "Pilih bahasa dulu";
       }
     }
 
@@ -232,13 +254,38 @@
       const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url; a.download = "flashcards.json";
+      a.href = url; a.download = "flashcards_bahasa.json";
       a.click();
       URL.revokeObjectURL(url);
     }
 
     function toggleTheme() {
       document.body.classList.toggle("dark");
+    }
+
+    function speak() {
+      if (!deckName || deck.length === 0) return;
+      stopSpeak();
+      const text = showAnswer ? deck[index].a : deck[index].q;
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = deckName === "English" ? "en-US" : "id-ID";
+      utter.rate = speechRate;
+      utter.pitch = speechPitch;
+      speechSynthesis.speak(utter);
+    }
+
+    function stopSpeak() {
+      if (speechSynthesis.speaking) speechSynthesis.cancel();
+    }
+
+    function adjustRate(delta) {
+      speechRate = Math.max(0.5, Math.min(2.0, speechRate + delta));
+      document.getElementById("rateVal").textContent = speechRate.toFixed(1);
+    }
+
+    function adjustPitch(delta) {
+      speechPitch = Math.max(0.5, Math.min(2.0, speechPitch + delta));
+      document.getElementById("pitchVal").textContent = speechPitch.toFixed(1);
     }
 
     init();
