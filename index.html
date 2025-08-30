@@ -325,16 +325,6 @@ function importJSON() {
   input.click();
 }
 
-// 📌 Tambahin tombol reset data (opsional)
-function resetData() {
-  if (confirm("Yakin mau hapus semua data?")) {
-    localStorage.removeItem("flashcardsData");
-    data = {};
-    updateDeckSelect();
-    alert("🗑️ Data flashcard sudah dihapus.");
-  }
-}
-
   </script>
 </body>
 </html>
