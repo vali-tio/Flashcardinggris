@@ -294,6 +294,47 @@
         .then(() => console.log("Service Worker registered"))
         .catch(err => console.error("SW registration failed:", err));
     }
+    // 📌 Load data otomatis saat aplikasi dibuka
+window.onload = function() {
+  const savedData = localStorage.getItem("flashcardsData");
+  if (savedData) {
+    data = JSON.parse(savedData);
+    alert("📌 Data flashcard dipulihkan dari penyimpanan.");
+  } else {
+    data = {}; // kosong kalau belum ada
+  }
+  updateDeckSelect();
+};
+
+// 📌 Update importJSON agar otomatis simpan
+function importJSON() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".json";
+  input.onchange = e => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = function() {
+      data = JSON.parse(reader.result);
+      localStorage.setItem("flashcardsData", JSON.stringify(data)); // simpan permanen
+      alert("✅ Data berhasil diimport & disimpan.");
+      updateDeckSelect();
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// 📌 Tambahin tombol reset data (opsional)
+function resetData() {
+  if (confirm("Yakin mau hapus semua data?")) {
+    localStorage.removeItem("flashcardsData");
+    data = {};
+    updateDeckSelect();
+    alert("🗑️ Data flashcard sudah dihapus.");
+  }
+}
+
   </script>
 </body>
 </html>
