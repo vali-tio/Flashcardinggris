@@ -1,6 +1,6 @@
 {
-  "name": "Jadwal Pelajaran",
-  "short_name": "Jadwal",
+  "name": "Flashcard 5 Mapel",
+  "short_name": "Cards5Mapel",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#ffffff",

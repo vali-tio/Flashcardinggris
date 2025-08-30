@@ -1,28 +1,55 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Jadwal Pelajaran</title>
-   <link rel="manifest" href="manifest.webmanifest">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flashcard Belajar SMP</title>
+  <link rel="manifest" href="manifest.webmanifest">
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f4f4f9; color: #333; transition: background 0.3s, color 0.3s; }
-    .dark { background: #1e1e1e; color: #f4f4f9; }
-    .container { max-width: 600px; margin: auto; }
-    select, input, button, textarea { padding: 8px; margin: 5px 0; border-radius: 6px; border: 1px solid #ccc; background: inherit; color: inherit; }
-    button { cursor: pointer; }
-    .btn { margin: 2px; padding: 6px 12px; border: none; border-radius: 6px; }
-    .btn-green { background: #28a745; color: #fff; }
-    .btn-blue { background: #007bff; color: #fff; }
-    .btn-red { background: #dc3545; color: #fff; }
-    .btn-yellow { background: #ffc107; color: #000; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-    th { background: #eee; }
-    .dark th { background: #333; }
-    .dark td, .dark th { border-color: #555; }
-    textarea { width: 100%; min-height: 80px; margin-top: 10px; resize: vertical; box-sizing: border-box; }
-    tr.dragging { opacity: 0.5; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 100vh;
+      background-color: var(--bg); color: var(--text);
+      transition: all 0.3s;
+    }
+    :root {
+      --bg: #f4f4f4;
+      --card: #fff;
+      --text: #000;
+    }
+    .dark {
+      --bg: #121212;
+      --card: #1e1e1e;
+      --text: #f1f1f1;
+    }
+    .card {
+      background: var(--card);
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      width: 90%; max-width: 400px;
+      text-align: center;
+      min-height: 150px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+    .controls, .menu {
+      margin-top: 15px;
+      display: flex; gap: 10px; flex-wrap: wrap;
+      justify-content: center;
+    }
+    button {
+      padding: 8px 15px;
+      border: none; border-radius: 8px;
+      cursor: pointer;
+      background: #007bff; color: white;
+    }
+    select, input {
+      padding: 5px; border-radius: 6px;
+    }
   </style>
 </head>
 <footer id="donateFooter">
@@ -59,177 +86,167 @@
 </style>
 
 <body>
-<div class="container">
-  <h2>Jadwal</h2>
-  <div>
-    <label>Pilih Hari:</label>
-    <select id="daySelect"></select>
-    <button class="btn btn-green" onclick="addDay()">+ Hari</button>
-    <button class="btn btn-red" onclick="removeDay()">- Hari</button>
-  </div>
-  <div>
-    <input type="text" id="subjectInput" placeholder="Tambah mata pelajaran...">
-    <button class="btn btn-green" onclick="addSubject()">+ Tambah</button>
-  </div>
-  <div>
-    <button class="btn btn-blue" onclick="saveData()">Simpan</button>
-    <button class="btn btn-green" onclick="importData()">Import</button>
-    <button class="btn btn-green" onclick="backupData()">Backup</button>
-    <button class="btn btn-yellow" onclick="toggleDarkMode()">🌙/☀️</button>
+  <h2>📚 Flashcard Belajar SMP</h2>
+  <div class="menu">
+    <select id="deckSelect"></select>
+    <button onclick="toggleTheme()">🌙/☀️</button>
+    <button onclick="addDeck()">➕ Mapel</button>
+    <button onclick="deleteDeck()">🗑️ Mapel</button>
+    <button onclick="importJSON()">📂 Import</button>
+    <button onclick="exportJSON()">💾 Export</button>
   </div>
 
-  <table id="scheduleTable">
-    <thead>
-      <tr><th>No</th><th>Mata Pelajaran</th><th>Aksi</th></tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <div>
-    <h3>Catatan:</h3>
-    <textarea id="notes" placeholder="Tulis catatan di sini..."></textarea>
+  <div class="card" onclick="toggleAnswer()">
+    <span id="flashText">Pilih mapel dulu</span>
   </div>
-</div>
 
-<script>
-  let data = JSON.parse(localStorage.getItem('jadwalData')) || { days: { 'Senin': [], }, notes: {} };
-  const daySelect = document.getElementById('daySelect');
-  const subjectInput = document.getElementById('subjectInput');
-  const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
-  const notes = document.getElementById('notes');
-  let dragSrcEl = null;
+  <div class="controls">
+    <button onclick="prevCard()">⬅️ Prev</button>
+    <button onclick="nextCard()">Next ➡️</button>
+    <button onclick="addCard()">➕ Tambah</button>
+    <button onclick="deleteCard()">🗑️ Hapus</button>
+  </div>
 
-  function renderDays(){
-    daySelect.innerHTML = '';
-    for (let d in data.days){
-      let opt = document.createElement('option');
-      opt.value = d; opt.textContent = d;
-      daySelect.appendChild(opt);
-    }
-    renderSchedule();
-  }
-
-  function addDay(){
-    let name = prompt('Nama hari:');
-    if(name && !data.days[name]){ data.days[name] = []; renderDays(); saveData(); }
-  }
-
-  function removeDay(){
-    let d = daySelect.value;
-    if(confirm('Hapus hari ' + d + '?')){
-      delete data.days[d];
-      delete data.notes[d];
-      renderDays(); saveData();
-    }
-  }
-
-  function addSubject(){
-    let d = daySelect.value;
-    let subj = subjectInput.value.trim();
-    if(subj){
-      data.days[d].push(subj);
-      subjectInput.value = '';
-      renderSchedule(); saveData();
-    }
-  }
-
-  function removeSubject(index){
-    let d = daySelect.value;
-    data.days[d].splice(index,1);
-    renderSchedule(); saveData();
-  }
-
-  function editSubject(index){
-    let d = daySelect.value;
-    let cell = document.getElementById('subj-'+index);
-    cell.contentEditable = true;
-    cell.focus();
-    cell.onblur = function(){
-      data.days[d][index] = cell.textContent.trim();
-      cell.contentEditable = false;
-      saveData();
+  <script>
+    let data = {
+      "IPA": [
+        {q: "Apa persamaan umum fotosintesis?", a: "6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂"},
+        {q: "Apa bunyi Hukum Newton II?", a: "ΣF = m × a"},
+      ],
+      "Matematika": [
+        {q: "Rumus keliling lingkaran?", a: "K = 2 × π × r"},
+        {q: "Teorema Pythagoras?", a: "a² + b² = c²"}
+      ]
     };
-  }
 
-  function renderSchedule(){
-    let d = daySelect.value;
-    scheduleTable.innerHTML = '';
-    data.days[d].forEach((subj,i)=>{
-      let tr = document.createElement('tr');
-      tr.setAttribute('draggable','true');
-      tr.innerHTML = `<td>${i+1}</td>
-                      <td id="subj-${i}">${subj}</td>
-                      <td>
-                        <button class='btn btn-blue' onclick='editSubject(${i})'>✏️</button>
-                        <button class='btn btn-red' onclick='removeSubject(${i})'>🗑️</button>
-                      </td>`;
-      addDnDHandlers(tr, i);
-      scheduleTable.appendChild(tr);
-    });
-    notes.value = data.notes[d] || '';
-  }
+    let deck = [], deckName = null, index = 0, showAnswer = false;
 
-  function saveData(){
-    let d = daySelect.value;
-    data.notes[d] = notes.value;
-    localStorage.setItem('jadwalData', JSON.stringify(data));
-    alert('Data disimpan!');
-  }
+    function init() {
+      const sel = document.getElementById("deckSelect");
+      sel.innerHTML = "<option disabled selected>Pilih Mapel</option>";
+      Object.keys(data).forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name; opt.textContent = name;
+        sel.appendChild(opt);
+      });
+      sel.onchange = () => selectDeck(sel.value);
+    }
 
-  function backupData(){
-    let blob = new Blob([JSON.stringify(data)], {type:'application/json'});
-    let a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'jadwal.json';
-    a.click();
-  }
+    function selectDeck(name) {
+      deckName = name;
+      deck = data[name];
+      index = 0; showAnswer = false;
+      render();
+    }
 
-  function importData(){
-    let inp = document.createElement('input');
-    inp.type = 'file';
-    inp.accept = 'application/json';
-    inp.onchange = e=>{
-      let file = e.target.files[0];
-      let reader = new FileReader();
-      reader.onload = ()=>{ data = JSON.parse(reader.result); renderDays(); saveData(); };
-      reader.readAsText(file);
-    };
-    inp.click();
-  }
+    function render() {
+      if (!deckName || deck.length === 0) {
+        document.getElementById("flashText").textContent = "Belum ada kartu di mapel ini";
+        return;
+      }
+      const card = deck[index];
+      document.getElementById("flashText").textContent = 
+        showAnswer ? card.a : card.q;
+    }
 
-  function toggleDarkMode(){
-    document.body.classList.toggle('dark');
-  }
+    function toggleAnswer() {
+      if (!deckName) return;
+      showAnswer = !showAnswer;
+      render();
+    }
 
-  function addDnDHandlers(row, index){
-    row.addEventListener('dragstart', (e)=>{
-      dragSrcEl = index;
-      row.classList.add('dragging');
-    });
-    row.addEventListener('dragend', ()=>{
-      row.classList.remove('dragging');
-    });
-    row.addEventListener('dragover', (e)=>{
-      e.preventDefault();
-    });
-    row.addEventListener('drop', (e)=>{
-      let d = daySelect.value;
-      let rows = Array.from(scheduleTable.querySelectorAll('tr'));
-      let dropIndex = rows.indexOf(row);
-      let moved = data.days[d].splice(dragSrcEl,1)[0];
-      data.days[d].splice(dropIndex,0,moved);
-      renderSchedule(); saveData();
-    });
-  }
+    function nextCard() {
+      if (!deckName || deck.length === 0) return;
+      index = (index+1) % deck.length;
+      showAnswer = false;
+      render();
+    }
 
-  daySelect.onchange = renderSchedule;
-  renderDays();
-      // Register Service Worker
-    if ("serviceWorker" in navigator) {
+    function prevCard() {
+      if (!deckName || deck.length === 0) return;
+      index = (index-1+deck.length) % deck.length;
+      showAnswer = false;
+      render();
+    }
+
+    function addCard() {
+      if (!deckName) return alert("Pilih mapel dulu!");
+      const q = prompt("Masukkan pertanyaan:");
+      const a = prompt("Masukkan jawaban:");
+      if(q && a) deck.push({q,a});
+      render();
+    }
+
+    function deleteCard() {
+      if (!deckName || deck.length === 0) return;
+      if(confirm("Hapus kartu ini?")) {
+        deck.splice(index,1);
+        index = Math.max(0, index-1);
+        render();
+      }
+    }
+
+    function addDeck() {
+      const name = prompt("Masukkan nama mapel baru:");
+      if (name && !data[name]) {
+        data[name] = [];
+        init();
+        alert("Mapel '" + name + "' berhasil ditambahkan!");
+      } else if (data[name]) {
+        alert("Mapel sudah ada!");
+      }
+    }
+
+    function deleteDeck() {
+      if (!deckName) return alert("Pilih mapel dulu!");
+      if (confirm("Hapus mapel '" + deckName + "' beserta semua kartunya?")) {
+        delete data[deckName];
+        deckName = null;
+        deck = [];
+        init();
+        document.getElementById("flashText").textContent = "Pilih mapel dulu";
+      }
+    }
+
+    function importJSON() {
+      const fileInput = document.createElement("input");
+      fileInput.type = "file"; fileInput.accept = "application/json";
+      fileInput.onchange = e => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            data = JSON.parse(reader.result);
+            init();
+            alert("Import berhasil!");
+          } catch {
+            alert("File tidak valid!");
+          }
+        };
+        reader.readAsText(file);
+      };
+      fileInput.click();
+    }
+
+    function exportJSON() {
+      const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "flashcards.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle("dark");
+    }
+
+    init();
+      if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("service-worker.js")
         .then(() => console.log("Service Worker registered"))
         .catch(err => console.error("SW registration failed:", err));
     }
-</script>
+  </script>
 </body>
 </html>
